@@ -1,0 +1,15 @@
+{
+  "app": {
+    "name": "수행평가 성적 확인표 출력기",
+    "url": "https://racing-nitrogen-r53y7bs.tmp.now",
+    "stack": "Vite"
+  },
+  "tracks": [
+    "security"
+  ],
+  "edzipCase": null,
+  "teacher": {
+    "dormsHandle": ""
+  },
+  "ownershipConfirmed": true
+}

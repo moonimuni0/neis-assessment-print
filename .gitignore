@@ -33,3 +33,7 @@ dist-ssr
 *.xlsx
 *.xls
 *.csv
+.dorms-check
+
+
+.vercel
