@@ -1,0 +1,51 @@
+import { AssessmentData } from '../types';
+
+export const SAMPLE_DATA: AssessmentData = {
+  meta: {
+    schoolName: "화수중학교",
+    academicYear: "2026학년도",
+    semester: "1학기",
+    grade: "2학년",
+    classroomInfo: "2학년 1 강의실",
+    subject: "기술·가정",
+    teacher: "강회정, 김경민, 이문희",
+    date: "2026.11.12.",
+    title: "수행평가 강의실별 일람표"
+  },
+  areas: [
+    { id: "area_1", name: "건강한 친구 관계 글쓰기", maxScore: 20, weight: 20 },
+    { id: "area_2", name: "사이버 학교 폭력 예방 카드뉴스 제작하기", maxScore: 20, weight: 20 },
+    { id: "area_3", name: "영양소 신문 만들기", maxScore: 20, weight: 20 },
+    { id: "area_4", name: "교과서 속 직업 탐색하기", maxScore: 30, weight: 30 },
+    { id: "area_5", name: "수공예 작품 만들기", maxScore: 10, weight: 10 },
+  ],
+  students: [
+    { id: "s_1", rawClassNum: "1/1", grade: "2", classRoom: "1", studentNumber: "1", name: "고민혁", scores: { area_1: 19, area_2: 16, area_3: 18, area_4: 24, area_5: 8 }, totalScore: 85 },
+    { id: "s_2", rawClassNum: "1/2", grade: "2", classRoom: "1", studentNumber: "2", name: "김다원", scores: { area_1: 20, area_2: 19, area_3: 19, area_4: 30, area_5: 9 }, totalScore: 97 },
+    { id: "s_3", rawClassNum: "1/3", grade: "2", classRoom: "1", studentNumber: "3", name: "김서연", scores: { area_1: 19, area_2: 19, area_3: 18, area_4: 29, area_5: 10 }, totalScore: 95 },
+    { id: "s_4", rawClassNum: "1/4", grade: "2", classRoom: "1", studentNumber: "4", name: "김서윤", scores: { area_1: 18, area_2: 19, area_3: 19, area_4: 23, area_5: 10 }, totalScore: 89 },
+    { id: "s_5", rawClassNum: "1/5", grade: "2", classRoom: "1", studentNumber: "5", name: "김수호", scores: { area_1: 19, area_2: 18, area_3: 19, area_4: 22, area_5: 10 }, totalScore: 88 },
+    { id: "s_6", rawClassNum: "1/6", grade: "2", classRoom: "1", studentNumber: "6", name: "김시율", scores: { area_1: 20, area_2: 19, area_3: 18, area_4: 26, area_5: 10 }, totalScore: 93 },
+    { id: "s_7", rawClassNum: "1/7", grade: "2", classRoom: "1", studentNumber: "7", name: "김연호", scores: { area_1: 19, area_2: 18, area_3: 19, area_4: 27, area_5: 8 }, totalScore: 91 },
+    { id: "s_8", rawClassNum: "1/8", grade: "2", classRoom: "1", studentNumber: "8", name: "김연후", scores: { area_1: 20, area_2: 20, area_3: 16, area_4: 24, area_5: 8 }, totalScore: 88 },
+    { id: "s_9", rawClassNum: "1/9", grade: "2", classRoom: "1", studentNumber: "9", name: "김윤아", scores: { area_1: 20, area_2: 17, area_3: 20, area_4: 22, area_5: 10 }, totalScore: 89 },
+    { id: "s_10", rawClassNum: "1/10", grade: "2", classRoom: "1", studentNumber: "10", name: "김재인", scores: { area_1: 19, area_2: 19, area_3: 18, area_4: 21, area_5: 7 }, totalScore: 84 },
+    { id: "s_11", rawClassNum: "1/11", grade: "2", classRoom: "1", studentNumber: "11", name: "김지우", scores: { area_1: 20, area_2: 16, area_3: 14, area_4: 23, area_5: 10 }, totalScore: 83 },
+    { id: "s_12", rawClassNum: "1/12", grade: "2", classRoom: "1", studentNumber: "12", name: "김하연", scores: { area_1: 10, area_2: 16, area_3: 14, area_4: 24, area_5: 3 }, totalScore: 67 },
+    { id: "s_13", rawClassNum: "1/13", grade: "2", classRoom: "1", studentNumber: "13", name: "서윤", scores: { area_1: 13, area_2: 16, area_3: 16, area_4: 12, area_5: 3 }, totalScore: 60 },
+    { id: "s_14", rawClassNum: "1/14", grade: "2", classRoom: "1", studentNumber: "14", name: "안지연", scores: { area_1: 12, area_2: 15, area_3: 14, area_4: 18, area_5: 3 }, totalScore: 62 },
+    { id: "s_15", rawClassNum: "1/15", grade: "2", classRoom: "1", studentNumber: "15", name: "오주이", scores: { area_1: 8, area_2: 8, area_3: 8, area_4: 12, area_5: 3 }, totalScore: 39 },
+    { id: "s_16", rawClassNum: "1/16", grade: "2", classRoom: "1", studentNumber: "16", name: "이다연", scores: { area_1: 20, area_2: 20, area_3: 20, area_4: 30, area_5: 10 }, totalScore: 100 },
+    { id: "s_17", rawClassNum: "1/17", grade: "2", classRoom: "1", studentNumber: "17", name: "이세경", scores: { area_1: 16, area_2: 17, area_3: 17, area_4: 26, area_5: 9 }, totalScore: 85 },
+    { id: "s_18", rawClassNum: "1/18", grade: "2", classRoom: "1", studentNumber: "18", name: "이중현", scores: { area_1: 13, area_2: 16, area_3: 15, area_4: 24, area_5: 10 }, totalScore: 78 },
+    { id: "s_19", rawClassNum: "1/19", grade: "2", classRoom: "1", studentNumber: "19", name: "이지윤", scores: { area_1: 20, area_2: 20, area_3: 19, area_4: 24, area_5: 10 }, totalScore: 93 },
+    { id: "s_20", rawClassNum: "1/20", grade: "2", classRoom: "1", studentNumber: "20", name: "장민준", scores: { area_1: 9, area_2: 18, area_3: 16, area_4: 16, area_5: 4 }, totalScore: 63 },
+    { id: "s_21", rawClassNum: "1/21", grade: "2", classRoom: "1", studentNumber: "21", name: "장인규", scores: { area_1: 17, area_2: 16, area_3: 17, area_4: 26, area_5: 9 }, totalScore: 85 },
+    { id: "s_22", rawClassNum: "1/22", grade: "2", classRoom: "1", studentNumber: "22", name: "정구원", scores: { area_1: 17, area_2: 17, area_3: 20, area_4: 27, area_5: 10 }, totalScore: 91 },
+    { id: "s_23", rawClassNum: "1/23", grade: "2", classRoom: "1", studentNumber: "23", name: "제이솔", scores: { area_1: 17, area_2: 14, area_3: 8, area_4: 19, area_5: 3 }, totalScore: 61 },
+    { id: "s_24", rawClassNum: "1/24", grade: "2", classRoom: "1", studentNumber: "24", name: "조현주", scores: { area_1: 16, area_2: 20, area_3: 20, area_4: 29, area_5: 10 }, totalScore: 95 },
+    { id: "s_25", rawClassNum: "1/25", grade: "2", classRoom: "1", studentNumber: "25", name: "채강우", scores: { area_1: 14, area_2: 16, area_3: 14, area_4: 17, area_5: 3 }, totalScore: 64 },
+    { id: "s_26", rawClassNum: "1/26", grade: "2", classRoom: "1", studentNumber: "26", name: "한서진", scores: { area_1: 19, area_2: 16, area_3: 19, area_4: 25, area_5: 6 }, totalScore: 85 },
+    { id: "s_27", rawClassNum: "1/27", grade: "2", classRoom: "1", studentNumber: "27", name: "홍빈", scores: { area_1: 13, area_2: 18, area_3: 11, area_4: 12, area_5: 3 }, totalScore: 57 },
+  ]
+};
