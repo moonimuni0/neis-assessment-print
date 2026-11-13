@@ -85,12 +85,13 @@ export const StudentTicket: React.FC<StudentTicketProps> = ({
                   key={area.id}
                   className="border-r border-slate-800 py-1 px-1 font-semibold text-slate-800 text-[11px] leading-tight"
                 >
-                  <div className="truncate max-w-[120px] mx-auto" title={area.name}>
+                  <div className="break-keep line-clamp-2 max-w-[130px] mx-auto text-[11px] leading-snug" title={area.name}>
                     {area.name}
                   </div>
-                  {settings.showMaxScore && area.maxScore && (
-                    <span className="text-[10px] text-slate-500 font-normal block">
-                      ({area.maxScore}점{area.weight ? `/${area.weight}%` : ''})
+                  {settings.showMaxScore && area.maxScore !== undefined && (
+                    <span className="text-[10px] text-slate-500 font-normal block mt-0.5">
+                      ({area.maxScore % 1 === 0 ? area.maxScore : area.maxScore}점
+                      {area.weight !== undefined ? `/${area.weight % 1 === 0 ? area.weight : area.weight}%` : ''})
                     </span>
                   )}
                 </th>
@@ -98,8 +99,8 @@ export const StudentTicket: React.FC<StudentTicketProps> = ({
               <th className="py-1 px-2 font-bold text-slate-900 bg-slate-200 w-16">
                 총점
                 {settings.showMaxScore && totalMaxScore > 0 && (
-                  <span className="text-[10px] text-slate-600 font-normal block">
-                    ({totalMaxScore}점)
+                  <span className="text-[10px] text-slate-600 font-normal block mt-0.5">
+                    ({totalMaxScore % 1 === 0 ? totalMaxScore : totalMaxScore}점)
                   </span>
                 )}
               </th>
@@ -118,7 +119,7 @@ export const StudentTicket: React.FC<StudentTicketProps> = ({
                     className="border-r border-slate-800 py-1.5 px-1 font-semibold text-slate-900"
                   >
                     {score !== null && score !== undefined ? (
-                      <span>{Number(score).toFixed(score % 1 === 0 ? 0 : 1)}</span>
+                      <span>{score % 1 === 0 ? score.toString() : parseFloat(score.toFixed(2)).toString()}</span>
                     ) : (
                       <span className="text-slate-400">-</span>
                     )}
@@ -127,7 +128,7 @@ export const StudentTicket: React.FC<StudentTicketProps> = ({
               })}
               <td className="py-1.5 px-2 font-black text-slate-950 bg-slate-100 text-sm">
                 {student.totalScore !== undefined
-                  ? Number(student.totalScore).toFixed(student.totalScore % 1 === 0 ? 0 : 1)
+                  ? (student.totalScore % 1 === 0 ? student.totalScore.toString() : parseFloat(student.totalScore.toFixed(2)).toString())
                   : '-'}
               </td>
             </tr>

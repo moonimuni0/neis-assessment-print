@@ -8,14 +8,139 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * 텍스트 내 줄바꿈으로 끊어진 한국어 단어들을 자연스럽게 정리 (예: '관\n계' -> '관계', '만\n들기' -> '만들기')
+ * 텍스트 내 줄바꿈 및 분절된 한국어 단어들을 자연스럽게 결합하고 공백을 정제
  */
-function cleanKoreanText(text: string): string {
+export function cleanKoreanText(text: string): string {
+  if (!text) return '';
   return text
+    .replace(/\r?\n/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/관\s+계/g, '관계')
-    .replace(/만\s+들기/g, '만들기')
+    .replace(/만\s+들\s*기/g, '만들기')
+    .replace(/기\s+획/g, '기획')
+    .replace(/설\s*명\s*서/g, '설명서')
+    .replace(/카\s*드\s*뉴\s*스/g, '카드뉴스')
+    .replace(/글\s*쓰\s*기/g, '글쓰기')
+    .replace(/작\s+품/g, '작품')
+    .replace(/탐\s+색/g, '탐색')
+    .replace(/전\s*달\s*법/g, '전달법')
+    .replace(/제\s+작/g, '제작')
+    .replace(/활\s+동/g, '활동')
+    .replace(/보\s*고\s*서/g, '보고서')
+    .replace(/프\s*레\s*젠\s*테\s*이\s*션/g, '프레젠테이션')
+    .replace(/발\s+표/g, '발표')
+    .replace(/평\s+가/g, '평가')
+    .replace(/실\s+험/g, '실험')
+    .replace(/실\s+습/g, '실습')
+    .replace(/포\s*트\s*폴\s*리\s*오/g, '포트폴리오')
     .trim();
+}
+
+/**
+ * 평가 영역 문자열에서 순수 영역명, 만점(maxScore), 반영비율(weight)을 추출
+ * 예: "가족의 가치와 미래\n(만점 20.00, 20.00%)" -> { name: "가족의 가치와 미래", maxScore: 20, weight: 20 }
+ */
+export function extractAreaInfo(rawTitle: string): { name: string; maxScore: number; weight?: number } {
+  const cleaned = cleanKoreanText(rawTitle);
+
+  // 1. (만점 20.00, 20.00%) 또는 (만점 30.00) 또는 (30점, 30%) 또는 만점: 20점 패턴 매칭
+  const scoreRegex = /\(?\s*(?:만점|배점)\s*[:：]?\s*([0-9.]+)(?:점)?(?:\s*,\s*([0-9.]+)%?)?\s*\)?|\(([0-9.]+)점(?:\s*,\s*([0-9.]+)%)?\)/i;
+  const match = cleaned.match(scoreRegex);
+
+  let maxScore = 20; // 기본값
+  let weight: number | undefined = undefined;
+
+  if (match) {
+    if (match[1]) {
+      const parsedMax = parseFloat(match[1]);
+      if (!isNaN(parsedMax)) maxScore = parsedMax;
+      if (match[2]) {
+        const parsedWeight = parseFloat(match[2]);
+        if (!isNaN(parsedWeight)) weight = parsedWeight;
+      }
+    } else if (match[3]) {
+      const parsedMax = parseFloat(match[3]);
+      if (!isNaN(parsedMax)) maxScore = parsedMax;
+      if (match[4]) {
+        const parsedWeight = parseFloat(match[4]);
+        if (!isNaN(parsedWeight)) weight = parsedWeight;
+      }
+    }
+  }
+
+  // 2. 영역 이름에서 만점 및 반영비율 표기 완전 제거
+  let cleanName = cleaned
+    .replace(/\(?\s*(?:만점|배점)\s*[:：]?\s*[0-9.]+(?:점)?(?:\s*,\s*[0-9.]+%?)?\s*\)?/gi, '')
+    .replace(/\([0-9.]+점(?:\s*,\s*[0-9.]+%)?\)/gi, '')
+    .replace(/\([0-9.]+%?\)/g, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 말줄임표나 끝에 남은 괄호 찌꺼기 제거
+  cleanName = cleanName.replace(/[(\[]\s*$/, '').trim();
+
+  return {
+    name: cleanName || cleaned,
+    maxScore,
+    weight,
+  };
+}
+
+/**
+ * 텍스트 전체에서 일람표 메타데이터(학교, 학년도, 학기, 학년, 강의실/반, 교과목 등) 추출
+ */
+export function parseAssessmentMetaFromText(fullText: string): AssessmentMeta {
+  // 학년도 (예: 2026학년도)
+  const yearMatch = fullText.match(/(\d{4}학년도)/);
+  const academicYear = yearMatch ? yearMatch[1] : `${new Date().getFullYear()}학년도`;
+
+  // 학기 (예: 1학기, 2학기)
+  const semesterMatch = fullText.match(/([12]학기)/);
+  const semester = semesterMatch ? semesterMatch[1] : '1학기';
+
+  // 학년 (예: 3학년, 2학년 - 단, 2026학년도 뒤의 6학년 매칭 방지)
+  const gradeMatch = fullText.match(/(?:^|\s|[^\d])([1-6])학년/);
+  const grade = gradeMatch ? `${gradeMatch[1]}학년` : '';
+
+  // 강의실 또는 반 정보 (예: 3 강의실, 1 강의실, 3반)
+  const classMatch = fullText.match(/(\d+\s*(?:강의실|반))/i);
+  const classroomInfo = classMatch ? classMatch[1].trim() : '';
+
+  // 교과목 (예: 교과목 : 기술·가정)
+  const subjMatch = fullText.match(/교과목\s*[:：]?\s*([^\n\r,]+)/);
+  let subject = '수행평가';
+  if (subjMatch) {
+    subject = subjMatch[1].trim();
+  } else {
+    // 괄호 안의 과목명 (예: [기술·가정])
+    const bracketMatch = fullText.match(/\[([가-힣a-zA-Z0-9·_~]+)\]/);
+    if (bracketMatch) subject = bracketMatch[1].trim();
+  }
+
+  // 교과담당교사
+  const teacherMatch = fullText.match(/교과담당교사\s*\(?([^\n\r()]+)\)?(?:\s*인|\n|$)/);
+  const teacher = teacherMatch ? teacherMatch[1].trim() : '';
+
+  // 학교명
+  const schoolMatch = fullText.match(/([가-힣]+(?:중학교|고등학교|초등학교))/);
+  const schoolName = schoolMatch ? schoolMatch[1].trim() : '학교';
+
+  // 날짜
+  const dateMatch = fullText.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
+  const date = dateMatch ? dateMatch[1] : new Date().toLocaleDateString('ko-KR');
+
+  return {
+    schoolName,
+    academicYear,
+    semester,
+    grade,
+    classroomInfo,
+    subject,
+    teacher,
+    date,
+    title: '수행평가 일람표',
+  };
 }
 
 /**
@@ -44,35 +169,7 @@ export async function parseAssessmentPdf(file: File): Promise<AssessmentData> {
  */
 export function parseNeisPdfText(fullText: string): AssessmentData {
   // 1. 메타데이터 파싱
-  const subjectMatch = fullText.match(/교과목\s*:\s*([^\n\r]+)/);
-  const subject = subjectMatch ? subjectMatch[1].trim() : '수행평가';
-
-  const academicMatch = fullText.match(/(\d{4}학년도)\s*(\d학기)?(?:\s*주간)?\s*(\d학년)?\s*([^\n\r]+)?/);
-  const academicYear = academicMatch ? academicMatch[1] : `${new Date().getFullYear()}학년도`;
-  const semester = academicMatch && academicMatch[2] ? academicMatch[2] : '1학기';
-  const grade = academicMatch && academicMatch[3] ? academicMatch[3] : '';
-  const classroomInfo = academicMatch && academicMatch[4] ? academicMatch[4].trim() : '';
-
-  const teacherMatch = fullText.match(/교과담당교사\s*\(?([^\n\r()]+)\)?(?:\s*인|\n|$)/);
-  const teacher = teacherMatch ? teacherMatch[1].trim() : '';
-
-  const schoolMatch = fullText.match(/([가-힣]+(?:중학교|고등학교|초등학교))/);
-  const schoolName = schoolMatch ? schoolMatch[1].trim() : '학교';
-
-  const dateMatch = fullText.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
-  const date = dateMatch ? dateMatch[1] : new Date().toLocaleDateString('ko-KR');
-
-  const meta: AssessmentMeta = {
-    schoolName,
-    academicYear,
-    semester,
-    grade,
-    classroomInfo,
-    subject,
-    teacher,
-    date,
-    title: '수행평가 일람표'
-  };
+  const meta = parseAssessmentMetaFromText(fullText);
 
   // 2. 평가 영역 파싱
   const areas: AssessmentArea[] = [];
@@ -80,19 +177,17 @@ export function parseNeisPdfText(fullText: string): AssessmentData {
 
   if (areaSectionMatch) {
     const areaSectionText = areaSectionMatch[1];
-    // (만점 20.00, 20.00%) 정규식으로 분할
-    const parts = areaSectionText.split(/\(만점\s*([0-9.]+),\s*([0-9.]+)%\)/);
-    // parts 구조: [area1_name, maxScore1, weight1, area2_name, maxScore2, weight2, ...]
-    for (let i = 0; i < parts.length - 2; i += 3) {
-      const rawName = cleanKoreanText(parts[i]);
-      const maxScore = parseFloat(parts[i + 1]);
-      const weight = parseFloat(parts[i + 2]);
-      if (rawName && !isNaN(maxScore)) {
+    // 만점 표기 기준으로 영역 분할 및 추출
+    const areaRegex = /([\s\S]+?)\(?\s*(?:만점|배점)?\s*([0-9.]+)(?:점)?(?:\s*,\s*([0-9.]+)%?)?\s*\)?/g;
+    let match;
+    while ((match = areaRegex.exec(areaSectionText)) !== null) {
+      const areaInfo = extractAreaInfo(`${match[1]} (만점 ${match[2]}${match[3] ? `, ${match[3]}%` : ''})`);
+      if (areaInfo.name) {
         areas.push({
           id: `area_${areas.length + 1}`,
-          name: rawName,
-          maxScore,
-          weight: isNaN(weight) ? undefined : weight
+          name: areaInfo.name,
+          maxScore: areaInfo.maxScore,
+          weight: areaInfo.weight,
         });
       }
     }
@@ -100,17 +195,14 @@ export function parseNeisPdfText(fullText: string): AssessmentData {
 
   // 3. 학생 데이터 파싱
   const students: StudentScore[] = [];
-  // 학생 데이터는 '합계  비고' 다음부터 '응시생수' 또는 '총점' 또는 '평균' 직전까지
-  const studentSectionMatch = fullText.match(/합계\s+(?:비고)?\s*([\s\S]+?)\s*(?:응시생수|총점|평균|교과목)/);
-  
+  const studentSectionMatch = fullText.match(/합계\s+(?:비고)?\s*([\s\S]+?)\s*(?:응시생수|총점|평균|교과목|$)/);
+
   if (studentSectionMatch) {
-    const lines = studentSectionMatch[1].split('\n').map(l => l.trim()).filter(Boolean);
-    
+    const lines = studentSectionMatch[1].split('\n').map((l) => l.trim()).filter(Boolean);
+
     for (const line of lines) {
-      // 행 예시: 1/1 2 고민혁 19.00 16.00 18.00 24.00 8.00 85.00 
       const tokens = line.split(/\s+/).filter(Boolean);
-      if (tokens.length >= 4) {
-        // 첫 번째 토큰이 반/번호 형식 (예: 1/1, 2/15 등) 또는 번호인지 확인
+      if (tokens.length >= 3) {
         const classNumMatch = tokens[0].match(/^(\d+)(?:\/(\d+))?$/);
         if (!classNumMatch) continue;
 
@@ -119,22 +211,19 @@ export function parseNeisPdfText(fullText: string): AssessmentData {
         let studentNumber = classNumMatch[2] || tokens[1];
         let gradeToken = '';
         let name = '';
-        let scoreTokensStartIndex = 3;
+        let scoreTokensStartIndex = 2;
 
-        // 토큰 구성 파악:
-        // Case A: 1/1 2 고민혁 ... (반/번호, 학년, 성명)
-        // Case B: 1/1 고민혁 ... (반/번호, 성명)
-        // Case C: 1 고민혁 ... (번호, 성명)
         if (tokens[1].match(/^\d+$/) && isNaN(Number(tokens[2]))) {
+          // 예: 1/1 2 고민혁 ... (반/번호 학년 성명)
           gradeToken = tokens[1];
           name = tokens[2];
           scoreTokensStartIndex = 3;
         } else {
+          // 예: 3/1 강주원 ... (반/번호 성명)
           name = tokens[1];
           scoreTokensStartIndex = 2;
         }
 
-        // 숫자 점수 추출
         const numericTokens: number[] = [];
         let note = '';
         for (let t = scoreTokensStartIndex; t < tokens.length; t++) {
@@ -147,7 +236,6 @@ export function parseNeisPdfText(fullText: string): AssessmentData {
         }
 
         if (numericTokens.length > 0) {
-          // 마지막 숫자는 대개 총점(합계)
           const totalScore = numericTokens[numericTokens.length - 1];
           const areaScores = numericTokens.slice(0, numericTokens.length - 1);
 
@@ -159,20 +247,20 @@ export function parseNeisPdfText(fullText: string): AssessmentData {
           students.push({
             id: `s_${students.length + 1}`,
             rawClassNum,
-            grade: gradeToken || meta.grade,
+            grade: gradeToken ? `${gradeToken}학년` : meta.grade,
             classRoom,
             studentNumber: studentNumber || String(students.length + 1),
             name,
             scores: studentScoreMap,
             totalScore,
-            note: note || undefined
+            note: note || undefined,
           });
         }
       }
     }
   }
 
-  // 만약 areas가 비어있다면 학생들의 점수 개수를 기준으로 기본 영역 생성
+  // 만약 areas가 비어있다면 학생 점수 개수 기준으로 기본 영역 생성
   if (areas.length === 0 && students.length > 0) {
     const firstStudent = students[0];
     const scoreCount = Object.keys(firstStudent.scores).length;
@@ -180,7 +268,7 @@ export function parseNeisPdfText(fullText: string): AssessmentData {
       areas.push({
         id: `area_${i}`,
         name: `영역 ${i}`,
-        maxScore: 100
+        maxScore: 20,
       });
     }
   }
@@ -198,45 +286,27 @@ export async function parseAssessmentExcel(file: File): Promise<AssessmentData> 
   const worksheet = workbook.Sheets[firstSheetName];
   const rawRows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
-  const meta: AssessmentMeta = {
-    schoolName: '학교',
-    academicYear: `${new Date().getFullYear()}학년도`,
-    semester: '1학기',
-    grade: '',
-    classroomInfo: '',
-    subject: '수행평가',
-    teacher: '',
-    date: new Date().toLocaleDateString('ko-KR'),
-    title: '수행평가 일람표'
-  };
-
-  // 상단 행들에서 과목, 학교명 등 메타데이터 탐색
-  for (let r = 0; r < Math.min(rawRows.length, 10); r++) {
-    const rowStr = rawRows[r].join(' ');
-    const subjMatch = rowStr.match(/교과목\s*[:：]\s*([^\s,]+)/);
-    if (subjMatch) meta.subject = subjMatch[1];
-
-    const schoolMatch = rowStr.match(/([가-힣]+(?:중학교|고등학교|초등학교))/);
-    if (schoolMatch) meta.schoolName = schoolMatch[1];
-
-    const yearMatch = rowStr.match(/(\d{4}학년도)/);
-    if (yearMatch) meta.academicYear = yearMatch[1];
+  // 1. 상단 행들에서 과목, 학교명, 학년도, 학기, 강의실 등 메타데이터 탐색
+  let fullMetaText = '';
+  for (let r = 0; r < Math.min(rawRows.length, 12); r++) {
+    fullMetaText += rawRows[r].join(' ') + '\n';
   }
+  const meta = parseAssessmentMetaFromText(fullMetaText);
 
-  // 헤더 행 탐색 ('성명' 또는 '이름'이 포함된 행)
+  // 2. 헤더 행 탐색 ('성명' 또는 '이름' 또는 '학생명'이 포함된 행)
   let headerRowIndex = -1;
   let nameColIndex = -1;
   let numColIndex = -1;
   let totalColIndex = -1;
 
   for (let r = 0; r < rawRows.length; r++) {
-    const row = rawRows[r].map(c => String(c).trim());
-    const nIdx = row.findIndex(c => c.includes('성명') || c.includes('이름') || c === '학생명');
+    const row = rawRows[r].map((c) => String(c).trim());
+    const nIdx = row.findIndex((c) => c.includes('성명') || c.includes('이름') || c === '학생명');
     if (nIdx !== -1) {
       headerRowIndex = r;
       nameColIndex = nIdx;
-      numColIndex = row.findIndex(c => c.includes('번호') || c.includes('학번') || c.includes('반/번호'));
-      totalColIndex = row.findIndex(c => c.includes('합계') || c.includes('총점') || c.includes('총 점'));
+      numColIndex = row.findIndex((c) => c.includes('번호') || c.includes('학번') || c.includes('반/번호'));
+      totalColIndex = row.findIndex((c) => c.includes('합계') || c.includes('총점') || c.includes('총 점'));
       break;
     }
   }
@@ -245,31 +315,55 @@ export async function parseAssessmentExcel(file: File): Promise<AssessmentData> 
     throw new Error('엑셀 파일에서 "성명" 또는 "이름" 열을 찾을 수 없습니다.');
   }
 
-  const headerRow = rawRows[headerRowIndex].map(c => String(c).trim());
-  
-  // 영역 열 추출: 이름열과 합계열 사이에 위치한 열들
+  const headerRow = rawRows[headerRowIndex].map((c) => String(c).trim());
   const endColIndex = totalColIndex !== -1 ? totalColIndex : headerRow.length;
-  const areaCols: { colIndex: number; name: string }[] = [];
+
+  // 3. 헤더 바로 다음 행이 만점/비율 전용 행인지 확인 (복수 행 헤더 양식 대응)
+  let hasNextRowMaxScores = false;
+  if (headerRowIndex + 1 < rawRows.length) {
+    const nextRow = rawRows[headerRowIndex + 1].map((c) => String(c).trim());
+    const maxScoreCount = nextRow.filter((c) => c.includes('만점') || c.includes('배점') || c.includes('%')).length;
+    if (maxScoreCount >= 2) {
+      hasNextRowMaxScores = true;
+    }
+  }
+
+  // 4. 영역 열 추출 및 정보 정제 (만점, 가중치, 순수 영역명)
+  const areas: AssessmentArea[] = [];
+  const areaCols: { colIndex: number; areaId: string }[] = [];
 
   for (let c = nameColIndex + 1; c < endColIndex; c++) {
     const title = headerRow[c];
     if (title && !title.includes('비고') && !title.includes('순위')) {
-      areaCols.push({ colIndex: c, name: cleanKoreanText(title) });
+      let combinedTitle = title;
+      if (hasNextRowMaxScores && headerRowIndex + 1 < rawRows.length) {
+        combinedTitle += ' ' + String(rawRows[headerRowIndex + 1][c] || '');
+      }
+
+      const areaInfo = extractAreaInfo(combinedTitle);
+      const areaId = `area_${areas.length + 1}`;
+
+      areas.push({
+        id: areaId,
+        name: areaInfo.name,
+        maxScore: areaInfo.maxScore,
+        weight: areaInfo.weight,
+      });
+
+      areaCols.push({ colIndex: c, areaId });
     }
   }
 
-  const areas: AssessmentArea[] = areaCols.map((ac, idx) => ({
-    id: `area_${idx + 1}`,
-    name: ac.name || `영역 ${idx + 1}`,
-    maxScore: 20
-  }));
-
-  // 학생 데이터 추출
+  // 5. 학생 데이터 행 파싱
   const students: StudentScore[] = [];
-  for (let r = headerRowIndex + 1; r < rawRows.length; r++) {
+  const dataStartRow = headerRowIndex + (hasNextRowMaxScores ? 2 : 1);
+
+  for (let r = dataStartRow; r < rawRows.length; r++) {
     const row = rawRows[r];
     const name = String(row[nameColIndex] || '').trim();
-    if (!name || name.includes('합계') || name.includes('평균') || name.includes('응시')) continue;
+    if (!name || name.includes('합계') || name.includes('평균') || name.includes('응시') || name.includes('교과목')) {
+      continue;
+    }
 
     const rawNum = numColIndex !== -1 ? String(row[numColIndex] || '').trim() : `${students.length + 1}`;
     const scores: { [areaId: string]: number | null } = {};
@@ -289,15 +383,27 @@ export async function parseAssessmentExcel(file: File): Promise<AssessmentData> 
     const explicitTotal = totalColIndex !== -1 ? parseFloat(String(row[totalColIndex]).replace(/,/g, '')) : NaN;
     const totalScore = !isNaN(explicitTotal) ? explicitTotal : calculatedTotal;
 
+    // 반/번호 분리
+    let classRoom = '1';
+    let studentNumber = rawNum;
+    if (rawNum.includes('/')) {
+      const parts = rawNum.split('/');
+      classRoom = parts[0];
+      studentNumber = parts[1];
+    } else if (meta.classroomInfo) {
+      const cMatch = meta.classroomInfo.match(/\d+/);
+      if (cMatch) classRoom = cMatch[0];
+    }
+
     students.push({
       id: `s_${students.length + 1}`,
       rawClassNum: rawNum,
       grade: meta.grade,
-      classRoom: rawNum.includes('/') ? rawNum.split('/')[0] : '1',
-      studentNumber: rawNum.includes('/') ? rawNum.split('/')[1] : rawNum,
+      classRoom,
+      studentNumber,
       name,
       scores,
-      totalScore
+      totalScore,
     });
   }
 

@@ -181,12 +181,13 @@ export const StudentTableView: React.FC<StudentTableViewProps> = ({
                 </th>
                 {data.areas.map((area: AssessmentArea) => (
                   <th key={area.id} className="py-3 px-3 text-center text-xs">
-                    <div className="truncate max-w-[130px]" title={area.name}>
+                    <div className="break-keep line-clamp-2 max-w-[140px] mx-auto font-semibold" title={area.name}>
                       {area.name}
                     </div>
-                    {area.maxScore && (
-                      <span className="text-[10px] text-slate-400 font-normal block">
-                        (만점 {area.maxScore}점)
+                    {area.maxScore !== undefined && (
+                      <span className="text-[10px] text-slate-400 font-normal block mt-0.5">
+                        (만점 {area.maxScore % 1 === 0 ? area.maxScore : area.maxScore}점
+                        {area.weight !== undefined ? ` / ${area.weight % 1 === 0 ? area.weight : area.weight}%` : ''})
                       </span>
                     )}
                   </th>
@@ -248,7 +249,7 @@ export const StudentTableView: React.FC<StudentTableViewProps> = ({
                                     : 'text-slate-800'
                                 }
                               >
-                                {Number(score).toFixed(score % 1 === 0 ? 0 : 1)}
+                                {score % 1 === 0 ? score : parseFloat(score.toFixed(2))}
                               </span>
                             ) : (
                               <span className="text-slate-300">-</span>
@@ -258,9 +259,7 @@ export const StudentTableView: React.FC<StudentTableViewProps> = ({
                       })}
                       <td className="py-3 px-4 text-center font-black text-slate-950 bg-slate-50">
                         {student.totalScore !== undefined
-                          ? Number(student.totalScore).toFixed(
-                              student.totalScore % 1 === 0 ? 0 : 1
-                            )
+                          ? (student.totalScore % 1 === 0 ? student.totalScore : parseFloat(student.totalScore.toFixed(2)))
                           : '-'}
                       </td>
                     </tr>
